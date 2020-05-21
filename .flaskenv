@@ -1,0 +1,1 @@
+FLASK_APP=wills_website.py
