@@ -61,8 +61,8 @@ def login():
         # Flash function is useful to show a message to user.
         # When you call a Flash() function, Flask stores the message, but not appear in web
         # pages. Need to add the messages in the base layout
-        flash('Login requested for user {}, remember_me={},password={}'.format(
-            form.username.data, form.remember_me.data,form.password.data))
+        flash('Login requested for user {}, remember_me={}'.format(
+            form.username.data, form.remember_me.data))
         # This function tells the browser browser to automatically navigate to a different
         # page, given as an argument.
         return redirect(url_for('index'))
