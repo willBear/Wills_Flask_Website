@@ -1,4 +1,4 @@
-from app import db
+from app import db, login
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Flask Login requires four items, and it can work with user models that
@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # get_id(): A method that returns a unique identifier for the user as a string
 
 from flask_login import UserMixin
-from app import login
+
 
 
 # The User class created inherits from db.Model, a base class for all
