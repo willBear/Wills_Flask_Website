@@ -15,10 +15,10 @@
 # The render_template() function invokes the Ninja 2 template engine that comes
 # bundled with the Flask Framework
 
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for,request
 from app import app
 from app.forms import LoginForm
-from flask_login import current_user, login_user, logout_user, login_required
+from flask_login import current_user, login_user, logout_user,login_required
 from app.models import User
 from werkzeug.urls import url_parse
 
@@ -80,7 +80,7 @@ def login():
         # the password hash and determine whether if it matches the hash or not.
         # So now there are two error conditions, no username or incorrect password, flash a message
         # which redirects user back to the login prompt
-        if user is None or not user.check_password(form.password.data):
+        if user is None or user.check_password(form.password.data):
             # Flash function is useful to show a message to user.
             # When you call a Flash() function, Flask stores the message, but not appear in web
             # pages. Need to add the messages in the base layout
@@ -91,7 +91,7 @@ def login():
         # which comes from Flask_Login. This function will register the user as logged in,
         # so that means any future pages that the user navigates to will have current_user
         # variable set to that user
-        login_user(user, remember=form.remember_me.data)
+        login_user(user, remember=form.remember_me)
 
         # Right after the user is logged in, the value of the next query string argument
         # is obtained. Flask provides a request variable that contains all the information
@@ -112,7 +112,6 @@ def login():
         # page, given as an argument.
         return redirect(url_for('index'))
     return render_template('login.html', title='Sign In', form=form)
-
 
 # There also need to offer users the option to log out of the application. Done with flask
 # -login's logout_user() function.
