@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
+from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
 from app.models import User
 
 
@@ -41,3 +41,12 @@ class RegistrationForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user is not None:
             raise ValidationError('Please use a different email address')
+
+# We are using a new field type and a new validator in this form. For the 'about'
+# field we use a TextAreaField, which is a multi-line box in which the user can
+# enter text. To validate the field we would use Length. Which will make sure that
+# the text entered is between 0 and 140 characters.
+class EditProfileForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    about_me = TextAreaField('About me', validators=[Length(min=0, max=140)])
+    submit = SubmitField('Submit')

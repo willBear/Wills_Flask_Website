@@ -18,10 +18,10 @@
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from app import app, db
-from app.forms import LoginForm, RegistrationForm
+from app.forms import LoginForm, RegistrationForm, EditProfileForm
 from app.models import User
 from werkzeug.urls import url_parse
-
+from datetime import datetime
 
 # The two lines below are decorators. A decorators modifies the function as
 # callbacks to certain events
@@ -148,3 +148,41 @@ def user(username):
         {'author': user, 'body': 'Test post #2'}
         ]
     return render_template('user.html', user=user, posts=posts)
+
+# The before_request decorated from Flask register the decorated function to be executed
+# right before the view function. This is extremely useful because we can insert code that
+# we want to execute before any view function in the application, and we can have it in a
+# single place.
+@app.before_request
+def before_request():
+    # The implementation simply checks if the current_user is logged in, and in that case sets
+    # the last_Seen field to the current time. We use UTC for consistent time units.
+    # Using local time is not a good idea because it goes into the database depending on your
+    # location.
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.utcnow()
+
+        # Commit the database session, so that the change made above is written to the database
+        # There is no db.session.add() before commit, when we reference current_user, Flask Login
+        # will invoke the user loader callback function which will run a db query that will put
+        # the target user in the database session.
+        db.session.commit()
+
+@app.route('/edit_profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    form = EditProfileForm()
+    if form.validate_on_submit():
+        current_user.username = form.username.data
+        current_user.about_me = form.about_me.data
+        db.session.commit()
+        flash('Your changes have been saved.')
+        return redirect(url_for('edit_profile'))
+    # If the browser sent a GET request, we need to respond by providing initial version of the
+    # form template. It can also be when the browser sends a POST request with form data, but some
+    # in that is invalid.
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.about_me.data = current_user.about_me
+    return render_template('edit_profile.html', title='Edit Profile',
+                           form=form)
