@@ -41,6 +41,7 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+
 # Flask-Login knows nothing about databases, it needs the application's help
 # in loading a user. The user loader is registered with Flask-login with the
 # @login... decorator.
