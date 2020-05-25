@@ -45,10 +45,6 @@ def index():
             'author': {'username': 'Susan'},
             'body': 'Its a beautiful day in Vancouver!!'
         },
-        {
-            'author': {'username': 'Will'},
-            'body': 'BettyZZZ does not love me :('
-        },
     ]
     return render_template('index.html', title='Home Page', posts=posts)
 
@@ -135,3 +131,20 @@ def register():
         flash('Congratulations, you are now a registered user!')
         return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
+# The decorator route this time has a dynamic component in it, which is indicated
+# as the <username> URL component. When a route has a dynamic component, Flask will
+# accept any text in that portion of the URL, and will invoke the view function with
+# the actual text as an argument.
+@app.route('/user/<username>')
+@login_required
+def user(username):
+    # We query the database and if we can find result(s) we would return the first
+    # result or automatically return a 404 error.
+    # If the database query does not trigger a 404 error, then that means that a user
+    # with the given username was found.
+    user = User.query.filter_by(username=username).first_or_404()
+    posts =[
+        {'author': user,'body':'Test post #1'},
+        {'author': user, 'body': 'Test post #2'}
+        ]
+    return render_template('user.html', user=user, posts=posts)

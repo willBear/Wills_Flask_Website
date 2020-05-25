@@ -1,6 +1,7 @@
 from datetime import datetime
 from app import db, login
 from werkzeug.security import generate_password_hash, check_password_hash
+from hashlib import md5
 
 # Flask Login requires four items, and it can work with user models that
 # are based on any database system
@@ -40,6 +41,16 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    # The new avatar() method returns the URL of the user's avatar image,
+    # scaled to the requestsed size in pixels. For users that don't have an
+    # avatar registered, an "identicon" image will be generated.
+    def avatar(self, size):
+        # To generate the MD5 hash, we first have to convert the emails to
+        # lower case. then encode the string into bytes before passing it on
+        # to the hash function.
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
 
 
 # Flask-Login knows nothing about databases, it needs the application's help
