@@ -45,6 +45,10 @@ def index():
             'author': {'username': 'Susan'},
             'body': 'Its a beautiful day in Vancouver!!'
         },
+        {
+            'author': {'username': 'Will'},
+            'body': 'BettyZZZ does not love me :('
+        },
     ]
     return render_template('index.html', title='Home Page', posts=posts)
 
@@ -130,4 +134,4 @@ def register():
         db.session.commit()
         flash('Congratulations, you are now a registered user!')
         return redirect(url_for('login'))
-    return render_template('register.html',title='Register',form=form)
+    return render_template('register.html', title='Register', form=form)

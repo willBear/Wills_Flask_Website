@@ -1,3 +1,4 @@
+from datetime import datetime
 from app import db, login
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -7,9 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # is_active: a property that is True if the user's account is active
 # is_anonymous: False for regular users and True for a special anonymous user
 # get_id(): A method that returns a unique identifier for the user as a string
-
 from flask_login import UserMixin
-
 
 
 # The User class created inherits from db.Model, a base class for all
@@ -24,6 +23,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
 
     # This method tells python how to print objects of this class, which
     # is going to be useful for debugging.
@@ -41,9 +41,20 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+
 # Flask-Login knows nothing about databases, it needs the application's help
 # in loading a user. The user loader is registered with Flask-login with the
 # @login... decorator.
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.String(140))
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<Post {}>'.format(self.body)

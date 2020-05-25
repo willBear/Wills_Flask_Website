@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, ValidationError, Email, EqualTo
+from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
 from app.models import User
 
 
@@ -29,15 +29,15 @@ class RegistrationForm(FlaskForm):
         user = User.query.filter_by(username=username.data).first()
         if user is not None:
             raise ValidationError('Please use a different username.')
-    """
-    When you add any methods that match the pattern validate_<field_name> 
-    WTForms take those as custom validators and invokes them in addition to
-    stock validators. In the event a result exists, a validation error is 
-    triggered by raising ValidationError. The message included as the argument
-    in the exception will be the message that will be displayed next to the field
-    for the user to see 
-    """
-    def validate_self(self, email):
+
+    # When you add any methods that match the pattern validate_<field_name>
+    # WTForms take those as custom validators and invokes them in addition to
+    # stock validators. In the event a result exists, a validation error is
+    # triggered by raising ValidationError. The message included as the argument
+    # in the exception will be the message that will be displayed next to the field
+    # for the user to see
+
+    def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
         if user is not None:
             raise ValidationError('Please use a different email address')

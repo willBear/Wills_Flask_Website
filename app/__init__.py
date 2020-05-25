@@ -1,10 +1,11 @@
 from flask import Flask
-from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
-app = Flask(__name__)
+from config import Config
 
+
+app = Flask(__name__)
 # Tell Flask to read and apply the config file, done right after
 # the Flask application instance is created
 # The configuration items can be accessed with a dictionary syntax from
