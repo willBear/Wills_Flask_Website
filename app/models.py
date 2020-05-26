@@ -54,6 +54,15 @@ class User(UserMixin, db.Model):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
 
+    # Declare many to many relationships in the users table
+    followed = db.relationship(
+        'User', secondary=followers,
+        primaryjoin=(followers.c.follower_id == id),
+        secondaryjoin=(followers.c.followed_id == id),
+        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic'
+
+    )
+
 
 # Flask-Login knows nothing about databases, it needs the application's help
 # in loading a user. The user loader is registered with Flask-login with the
@@ -71,3 +80,11 @@ class Post(db.Model):
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)
+
+
+# We are not declaring this table as a model, like we did for users and posts.
+# Since this is an auxiliary table that has no data other than foreign keys,
+# we do not need model class
+followers = db.Table('followers',
+                     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
+                     db.Column('followed_id', db.Integer, db.ForeignKey('user.id')))
