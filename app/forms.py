@@ -58,7 +58,9 @@ class EditProfileForm(FlaskForm):
         super(EditProfileForm, self).__init__(*args, **kwargs)
         self.original_username = original_username
 
-    #
+    # We validate username when we press submit,this validator method is called and
+    # we check against the database for the first occurence of the username, if its
+    # not in the database.
     def validate_username(self, username):
         if username.data != self.original_username:
             user = User.query.filter_by(username=self.username.data).first()

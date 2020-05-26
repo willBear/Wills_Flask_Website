@@ -178,6 +178,7 @@ def edit_profile():
         db.session.commit()
         flash('Your changes have been saved.')
         return redirect(url_for('edit_profile'))
+
     # If the browser sent a GET request, we need to respond by providing initial version of the
     # form template. It can also be when the browser sends a POST request with form data, but some
     # in that is invalid.
