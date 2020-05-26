@@ -1,5 +1,7 @@
 import os
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+
 # The configuration settings are defined as class variables inside the config
 # class. As the application needs more configuration items, they can be added
 # to this class, and later if theres need to have more than one configuration
@@ -32,3 +34,18 @@ class Config(object):
     # disable a feature of Flask-SQLAlchemy that we do not need need, which is to
     # signal the application every time a change is about to be made in the database
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # The Problem with the default error handling provided by Flask does not notify
+    # its producer, stack trace for errors are printed to the terminal, output of the
+    # server process needs to be monitored to discover errors. Its good to take proactive
+    # approaches regarding error. If an error occurs on the production version of the
+    # application, we configure an email to be sent
+    MAIL_SERVER = os.environ.get('MAIL_SERVER')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT') or 25)
+    # Enable encrypted connections
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_USERNAME = os.environ.get('MAIL_PASSWORD')
+    ADMINS = ['will_xiong@hotmail.com']
+
+

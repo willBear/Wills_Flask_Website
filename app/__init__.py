@@ -3,6 +3,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from config import Config
+import logging
+from logging.handlers import SMTPHandler, RotatingFileHandler
+import os
 
 
 app = Flask(__name__)
@@ -36,6 +39,45 @@ login = LoginManager(app)
 # get the URL
 login.login_view = 'login'
 
+# Flask uses Python's logging package to write its logs, and this package already has the
+# ability to send logs by email. All we need to do to get emails sent out on errors is to add
+# a SMTPHandler instance to the Flask logger object, which is app.logger
+if not app.debug:
+    if app.config['MAIL_SERVER']:
+        auth = None
+        if app.config['MAIL_USERNAME'] or app.config['MAIL_PASSWORD']:
+            auth = (app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+        secure = None
+        if app.config['MAIL_USE_TLS']:
+            secure = ()
+        mail_handler = SMTPHandler(
+            mailhost=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
+            fromaddr='no-reply@' + app.config['MAIL_SERVER'],
+            toaddrs=app.config['ADMINS'], subject='Wills Website Failure',
+            credentials=auth, secure=secure)
+        mail_handler.setLevel(logging.ERROR)
+        app.logger.addHandler(mail_handler)
+
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    # The RotatingFileHandler class rotates the logs, ensuring that the log files do not grow
+    # too large when the application runs for a long time. We are limiting the file to be 10KB
+    # Keep the last 10 files as backup
+    file_handler = RotatingFileHandler('logs/microblog.log', maxBytes=10240,
+                                       backupCount=10)
+    # The logging formatting class provides custom formatting for the log messages. Since these
+    # messages are going to a file, we include time stamp, the logging level, the message and the
+    # source file and line number form where the log entry originated
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+    # We also lower the logging level to the INFO category, both in the application logger and file
+    # logger handler. The logging categories are DEBUG, INFO, WARNING, ERROR and CRITICAL
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Wills Website')
+
 # This is imported at the bottom is a workaround to circular imports.
 # Putting it on the bottom avoids results from mutual references
-from app import routes, models
+from app import routes, models, errors
