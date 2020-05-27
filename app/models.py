@@ -11,6 +11,13 @@ from hashlib import md5
 # get_id(): A method that returns a unique identifier for the user as a string
 from flask_login import UserMixin
 
+# We are not declaring this table as a model, like we did for users and posts.
+# Since this is an auxiliary table that has no data other than foreign keys,
+# we do not need model class
+followers = db.Table('followers',
+                     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
+                     db.Column('followed_id', db.Integer, db.ForeignKey('user.id')))
+
 
 # The User class created inherits from db.Model, a base class for all
 # models from Flask-SQLAlchemy. Fields are created as instances of the
@@ -56,14 +63,57 @@ class User(UserMixin, db.Model):
 
     # Declare many to many relationships in the users table
     followed = db.relationship(
+        # User is the right side entity of the relationship, left side entity
+        # is the parent class. we use the same class on both sides since this is
+        # a self referential relationship
         'User', secondary=followers,
+        # Primaryjoin indicates the condition that links the left side entity with
+        # the association table. The followers.c.follower_id expression reference the
+        # follower_id column on the association table
         primaryjoin=(followers.c.follower_id == id),
+        # Similar for primary join where we join followed id
         secondaryjoin=(followers.c.followed_id == id),
+        # Backref defines how this relationship will be access from the right side entity.
+        # From the left side, the relationship is named followed so from the right side
+        # we are going to use the name followers to reperesent al the left side users
+        # that are linked to the target user in the right side.
         backref=db.backref('followers', lazy='dynamic'), lazy='dynamic'
-
     )
 
+    def follow(self, user):
+        if not self.is_following(user):
+            self.followed.append(user)
 
+    def unfollow(self, user):
+        if self.is_follwing(user):
+            self.followed.remove(user)
+
+    # The is_following method isses a query on the followed relationship to
+    # check if a link between two users already exists. It looks for items in
+    # the association table that have the left side foreign key set to the self user,
+    # and the right side set to the user argument.
+    # The argument will either return a 0 or a 1
+    def is_following(self, user):
+        return self.followed.filter(
+            followers.c.followed_id == user.id).count() > 0
+
+    #
+    def followed_posts(self):
+        # In the join operation on the posts table, the first argument is the
+        # followers association table, and the second argument is the join
+        # condition. This call creates a temp table that combines data from
+        # posts and followers data tables. The data is going to be merged according
+        # to the condition that we have passed as argument
+        # The followed_id field must equal to the user_id of the posts table.
+        followed =  Post.query.join(
+            followers, (followers.c.followed_id == Post.user_id)).filter(
+            followers.c.follower_id == self.id).order_by(
+            Post.timestamp.desc())
+        # This does not apply to your own posts, so we query the posts table
+        # and find id's for ourselves, then we union the table and order the
+        # timestamp by time descending 
+        own = Post.query.filter_by(user_id=self.id)
+        return followed.union(own).order_by(Post.timestamp.desc())
 # Flask-Login knows nothing about databases, it needs the application's help
 # in loading a user. The user loader is registered with Flask-login with the
 # @login... decorator.
@@ -80,11 +130,3 @@ class Post(db.Model):
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)
-
-
-# We are not declaring this table as a model, like we did for users and posts.
-# Since this is an auxiliary table that has no data other than foreign keys,
-# we do not need model class
-followers = db.Table('followers',
-                     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
-                     db.Column('followed_id', db.Integer, db.ForeignKey('user.id')))
