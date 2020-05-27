@@ -46,3 +46,7 @@ jinja2.exceptions.UndefinedError: 'urlfor' is undefined
 2020-05-27 13:50:44,653 INFO: Wills Website [in /Users/wx/Documents/GitHub/Wills_Flask_Website/app/__init__.py:79]
 2020-05-27 13:51:22,146 INFO: Wills Website [in /Users/wx/Documents/GitHub/Wills_Flask_Website/app/__init__.py:79]
 2020-05-27 13:51:35,073 INFO: Wills Website [in /Users/wx/Documents/GitHub/Wills_Flask_Website/app/__init__.py:79]
+2020-05-27 14:16:10,784 INFO: Wills Website [in /Users/wx/Documents/GitHub/Wills_Flask_Website/app/__init__.py:79]
+2020-05-27 14:17:35,673 INFO: Wills Website [in /Users/wx/Documents/GitHub/Wills_Flask_Website/app/__init__.py:79]
+2020-05-27 14:17:49,729 INFO: Wills Website [in /Users/wx/Documents/GitHub/Wills_Flask_Website/app/__init__.py:79]
+2020-05-27 14:18:52,553 INFO: Wills Website [in /Users/wx/Documents/GitHub/Wills_Flask_Website/app/__init__.py:79]

@@ -85,7 +85,7 @@ class User(UserMixin, db.Model):
             self.followed.append(user)
 
     def unfollow(self, user):
-        if self.is_follwing(user):
+        if self.is_following(user):
             self.followed.remove(user)
 
     # The is_following method isses a query on the followed relationship to
@@ -105,13 +105,12 @@ class User(UserMixin, db.Model):
         # posts and followers data tables. The data is going to be merged according
         # to the condition that we have passed as argument
         # The followed_id field must equal to the user_id of the posts table.
-        followed =  Post.query.join(
+        followed = Post.query.join(
             followers, (followers.c.followed_id == Post.user_id)).filter(
-            followers.c.follower_id == self.id).order_by(
-            Post.timestamp.desc())
+            followers.c.follower_id == self.id)
         # This does not apply to your own posts, so we query the posts table
         # and find id's for ourselves, then we union the table and order the
-        # timestamp by time descending 
+        # timestamp by time descending
         own = Post.query.filter_by(user_id=self.id)
         return followed.union(own).order_by(Post.timestamp.desc())
 # Flask-Login knows nothing about databases, it needs the application's help
