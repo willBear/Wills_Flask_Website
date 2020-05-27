@@ -11,16 +11,22 @@ class UserModelCase(unittest.TestCase):
         # database during the tests. The db.create_all() call creates all the data
         # tables.
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+
+        # This will create a like db that follows the orginal table
         db.create_all()
 
     def tearDown(self):
         db.session.remove()
         db.drop_all()
-
+    """
+    With this method, we tests the viability of adding a new user with username 
+    and check whether password hashing is functional
+    """
     def test_password_hashing(self):
         u = User(username='susan')
         u.set_password('cat')
         self.assertFalse(u.check_password('dog'))
+        self.assertFalse(u.check_password('Cat'))
         self.assertTrue(u.check_password('cat'))
 
     def test_avatar(self):

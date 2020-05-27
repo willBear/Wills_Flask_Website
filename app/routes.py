@@ -18,10 +18,11 @@
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from app import app, db
-from app.forms import LoginForm, RegistrationForm, EditProfileForm
+from app.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm
 from app.models import User
 from werkzeug.urls import url_parse
 from datetime import datetime
+
 
 # The two lines below are decorators. A decorators modifies the function as
 # callbacks to certain events
@@ -118,6 +119,7 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -131,6 +133,8 @@ def register():
         flash('Congratulations, you are now a registered user!')
         return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
+
+
 # The decorator route this time has a dynamic component in it, which is indicated
 # as the <username> URL component. When a route has a dynamic component, Flask will
 # accept any text in that portion of the URL, and will invoke the view function with
@@ -143,11 +147,14 @@ def user(username):
     # If the database query does not trigger a 404 error, then that means that a user
     # with the given username was found.
     user = User.query.filter_by(username=username).first_or_404()
-    posts =[
-        {'author': user,'body':'Test post #1'},
+    posts = [
+        {'author': user, 'body': 'Test post #1'},
         {'author': user, 'body': 'Test post #2'}
-        ]
-    return render_template('user.html', user=user, posts=posts)
+    ]
+    #return render_template('user.html', user=user, posts=posts)
+    form = EmptyForm()
+    return render_template('user.html', user=user, posts=posts, form=form)
+
 
 # The before_request decorated from Flask register the decorated function to be executed
 # right before the view function. This is extremely useful because we can insert code that
@@ -168,6 +175,7 @@ def before_request():
         # the target user in the database session.
         db.session.commit()
 
+
 @app.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
@@ -187,3 +195,43 @@ def edit_profile():
         form.about_me.data = current_user.about_me
     return render_template('edit_profile.html', title='Edit Profile',
                            form=form)
+
+
+@app.route('/follow/<username>', methods=['POST'])
+@login_required
+def follow(username):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=username).first()
+        if user is None:
+            flash('User {} not found.'.format((username)))
+            return redirect(url_for('index'))
+        if user == current_user:
+            flash('You cannot follow yourself!'.format((username)))
+            return redirect(url_for('user', username=username))
+        current_user.follow(user)
+        db.session.commit()
+        flash('You are following {}!'.format(username))
+        return redirect(url_for('user', username=username))
+    else:
+        return redirect(url_for('index'))
+
+
+@app.route('/unfollow/<username>', methods=['POST'])
+@login_required
+def unfollow(username):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=username).first()
+        if user is None:
+            flash('User {} not found.'.format((username)))
+            return redirect(url_for('index'))
+        if user == current_user:
+            flash('You cannot unfollow yourself!'.format((username)))
+            return redirect(url_for('user', username=username))
+        current_user.unfollow(user)
+        db.session.commit()
+        flash('You are not following {}!'.format(username))
+        return redirect(url_for('user', username=username))
+    else:
+        return redirect(url_for('index'))
