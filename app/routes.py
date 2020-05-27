@@ -147,11 +147,11 @@ def user(username):
     # If the database query does not trigger a 404 error, then that means that a user
     # with the given username was found.
     user = User.query.filter_by(username=username).first_or_404()
+    print(user)
     posts = [
         {'author': user, 'body': 'Test post #1'},
         {'author': user, 'body': 'Test post #2'}
     ]
-    #return render_template('user.html', user=user, posts=posts)
     form = EmptyForm()
     return render_template('user.html', user=user, posts=posts, form=form)
 
