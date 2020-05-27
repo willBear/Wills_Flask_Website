@@ -42,6 +42,7 @@ class RegistrationForm(FlaskForm):
         if user is not None:
             raise ValidationError('Please use a different email address')
 
+
 # We are using a new field type and a new validator in this form. For the 'about'
 # field we use a TextAreaField, which is a multi-line box in which the user can
 # enter text. To validate the field we would use Length. Which will make sure that
@@ -67,5 +68,12 @@ class EditProfileForm(FlaskForm):
             if user is not None:
                 raise ValidationError('Please use a different username.')
 
+
 class EmptyForm(FlaskForm):
+    submit = SubmitField('Submit')
+
+# This adds a post form with a text edit field and a submit button
+class PostForm(FlaskForm):
+    post = TextAreaField('Say something', validators=[
+        DataRequired(), Length(min=1, max=140)])
     submit = SubmitField('Submit')
