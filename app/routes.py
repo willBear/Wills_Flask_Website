@@ -27,34 +27,14 @@ from datetime import datetime
 # The two lines below are decorators. A decorators modifies the function as
 # callbacks to certain events
 
-# The before_request decorated from Flask register the decorated function to be executed
-# right before the view function. This is extremely useful because we can insert code that
-# we want to execute before any view function in the application, and we can have it in a
-# single place.
-@app.before_request
-def before_request():
-    # The implementation simply checks if the current_user is logged in, and in that case sets
-    # the last_Seen field to the current time. We use UTC for consistent time units.
-    # Using local time is not a good idea because it goes into the database depending on your
-    # location.
-    if current_user.is_authenticated:
-        current_user.last_seen = datetime.utcnow()
-
-        # Commit the database session, so that the change made above is written to the database
-        # There is no db.session.add() before commit, when we reference current_user, Flask Login
-        # will invoke the user loader callback function which will run a db query that will put
-        # the target user in the database session.
-        db.session.commit()
-
-
 # In our case the @app.route decorator creates an association between the URLs
 # given as an argument and the function. There are two decorators, which associate
 # URLs '/' and '/index' to this function. When a web browser requests either of
 # these two URLs, Flash is going to invoke this function and pass the return value
 # back to the browser as a response.
 
-@app.route('/', methods=['GET', 'POST'])
-@app.route('/index', methods=['GET', 'POST'])
+@app.route('/')
+@app.route('/index')
 @login_required
 def index():
     # Import post and postform classes
@@ -75,18 +55,10 @@ def index():
         # GET request to grab the page indicated in the redirect.
         # This simple trick is called Post/Redirect/Get pattern.
         return redirect(url_for('index'))
-
-    page = request.args.get('page', 1, type=int)
-    posts = current_user.followed_posts().paginate(
-        page, app.config['POSTS_PER_PAGE'], False)
-    next_url = url_for('index', page=posts.next_num) \
-        if posts.has_next else None
-    prev_url = url_for('index', page=posts.prev_num) \
-        if posts.has_prev else None
-    return render_template('index.html', title='Home', form=form,
-                           posts=posts.items, next_url=next_url,
-                           prev_url=prev_url)
-
+    # Calling all() on this query triggers its execution with the return value being
+    # a list with all the results.
+    posts = current_user.followed_posts().all()
+    return render_template('index.html', title='Home Page', form=form, posts=posts)
 
 
 # The methods argument in the route decorator tells Flask that this view function
@@ -186,16 +158,33 @@ def user(username):
     # If the database query does not trigger a 404 error, then that means that a user
     # with the given username was found.
     user = User.query.filter_by(username=username).first_or_404()
-    page = request.args.get('page', 1, type=int)
-    posts = user.posts.order_by(Post.timestamp.desc()).paginate(
-        page, app.config['POSTS_PER_PAGE'], False)
-    next_url = url_for('user', username=user.username, page=posts.next_num) \
-        if posts.has_next else None
-    prev_url = url_for('user', username=user.username, page=posts.next_num) \
-        if posts.has_prev else None
+    print(user)
+    posts = [
+        {'author': user, 'body': 'Test post #1'},
+        {'author': user, 'body': 'Test post #2'}
+    ]
     form = EmptyForm()
-    return render_template('user.html', user=user, posts=posts.items, next_url=next_url,
-                           prev_url=prev_url, form=form)
+    return render_template('user.html', user=user, posts=posts, form=form)
+
+
+# The before_request decorated from Flask register the decorated function to be executed
+# right before the view function. This is extremely useful because we can insert code that
+# we want to execute before any view function in the application, and we can have it in a
+# single place.
+@app.before_request
+def before_request():
+    # The implementation simply checks if the current_user is logged in, and in that case sets
+    # the last_Seen field to the current time. We use UTC for consistent time units.
+    # Using local time is not a good idea because it goes into the database depending on your
+    # location.
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.utcnow()
+
+        # Commit the database session, so that the change made above is written to the database
+        # There is no db.session.add() before commit, when we reference current_user, Flask Login
+        # will invoke the user loader callback function which will run a db query that will put
+        # the target user in the database session.
+        db.session.commit()
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
