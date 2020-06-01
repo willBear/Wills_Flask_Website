@@ -61,7 +61,7 @@ def index():
     form = PostForm()
     if form.validate_on_submit():
         # The template receives the form object as an argument
-        post = Post(body=form.post.data, user_id=1,timestamp=datetime.utcnow())
+        post = Post(body=form.post.data, author=current_user)
         # Inserts new Post record into the database
         db.session.add(post)
         db.session.commit()
@@ -74,7 +74,6 @@ def index():
         # If a POST is answered with a redirect, the browser is now instructed to send a
         # GET request to grab the page indicated in the redirect.
         # This simple trick is called Post/Redirect/Get pattern.
-        return redirect(url_for('index'))
     page = request.args.get('page', 1, type=int)
     posts = current_user.followed_posts().paginate(
         page, app.config['POSTS_PER_PAGE'], False)

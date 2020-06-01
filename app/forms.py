@@ -75,5 +75,5 @@ class EmptyForm(FlaskForm):
 # This adds a post form with a text edit field and a submit button
 class PostForm(FlaskForm):
     post = TextAreaField('Say something', validators=[
-        DataRequired(), Length(min=1, max=140)])
+        DataRequired()])
     submit = SubmitField('Submit')

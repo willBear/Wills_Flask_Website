@@ -1,7 +1,8 @@
 from datetime import datetime
+from hashlib import md5
 from app import db, login
 from werkzeug.security import generate_password_hash, check_password_hash
-from hashlib import md5
+
 
 # Flask Login requires four items, and it can work with user models that
 # are based on any database system
@@ -14,9 +15,11 @@ from flask_login import UserMixin
 # We are not declaring this table as a model, like we did for users and posts.
 # Since this is an auxiliary table that has no data other than foreign keys,
 # we do not need model class
-followers = db.Table('followers',
-                     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
-                     db.Column('followed_id', db.Integer, db.ForeignKey('user.id')))
+followers = db.Table(
+    'followers',
+    db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
+)
 
 
 # The User class created inherits from db.Model, a base class for all
@@ -34,6 +37,11 @@ class User(UserMixin, db.Model):
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    followed = db.relationship(
+        'User', secondary=followers,
+        primaryjoin=(followers.c.follower_id == id),
+        secondaryjoin=(followers.c.followed_id == id),
+        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
 
     # This method tells python how to print objects of this class, which
     # is going to be useful for debugging.
