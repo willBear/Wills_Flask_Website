@@ -15,13 +15,33 @@
 # The render_template() function invokes the Ninja 2 template engine that comes
 # bundled with the Flask Framework
 
+from datetime import datetime
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from app import app, db
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm, PostForm
 from app.models import User, Post
 from werkzeug.urls import url_parse
-from datetime import datetime
+
+
+# The before_request decorated from Flask register the decorated function to be executed
+# right before the view function. This is extremely useful because we can insert code that
+# we want to execute before any view function in the application, and we can have it in a
+# single place.
+@app.before_request
+def before_request():
+    # The implementation simply checks if the current_user is logged in, and in that case sets
+    # the last_Seen field to the current time. We use UTC for consistent time units.
+    # Using local time is not a good idea because it goes into the database depending on your
+    # location.
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.utcnow()
+
+        # Commit the database session, so that the change made above is written to the database
+        # There is no db.session.add() before commit, when we reference current_user, Flask Login
+        # will invoke the user loader callback function which will run a db query that will put
+        # the target user in the database session.
+        db.session.commit()
 
 
 # The two lines below are decorators. A decorators modifies the function as
@@ -33,15 +53,15 @@ from datetime import datetime
 # these two URLs, Flash is going to invoke this function and pass the return value
 # back to the browser as a response.
 
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 @login_required
 def index():
     # Import post and postform classes
     form = PostForm()
     if form.validate_on_submit():
         # The template receives the form object as an argument
-        post = Post(body=form.post.data, author=current_user)
+        post = Post(body=form.post.data, user_id=1,timestamp=datetime.utcnow())
         # Inserts new Post record into the database
         db.session.add(post)
         db.session.commit()
@@ -55,10 +75,18 @@ def index():
         # GET request to grab the page indicated in the redirect.
         # This simple trick is called Post/Redirect/Get pattern.
         return redirect(url_for('index'))
-    # Calling all() on this query triggers its execution with the return value being
-    # a list with all the results.
-    posts = current_user.followed_posts().all()
-    return render_template('index.html', title='Home Page', form=form, posts=posts)
+    page = request.args.get('page', 1, type=int)
+    posts = current_user.followed_posts().paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('index', page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('index', page=posts.prev_num) \
+        if posts.has_next else None
+    # # Calling all() on this query triggers its execution with the return value being
+    # # a list with all the results.
+    # posts = current_user.followed_posts().all()
+    return render_template('index.html', title='Home', form=form, posts=posts.items,
+                           next_url=next_url, prev_url=prev_url)
 
 
 # The methods argument in the route decorator tells Flask that this view function
@@ -123,6 +151,20 @@ def login():
     return render_template('login.html', title='Sign In', form=form)
 
 
+@app.route('/explore')
+@login_required
+def explore():
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('explore', page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('explore', page=posts.prev_num) \
+        if posts.has_prev else None
+    return render_template('index.html', title='Explore', posts=posts.items,
+                           next_url=next_url, prev_url=prev_url)
+
+
 # There also need to offer users the option to log out of the application. Done with flask
 # -login's logout_user() function.
 @app.route('/logout')
@@ -153,38 +195,17 @@ def register():
 @app.route('/user/<username>')
 @login_required
 def user(username):
-    # We query the database and if we can find result(s) we would return the first
-    # result or automatically return a 404 error.
-    # If the database query does not trigger a 404 error, then that means that a user
-    # with the given username was found.
     user = User.query.filter_by(username=username).first_or_404()
-    print(user)
-    posts = [
-        {'author': user, 'body': 'Test post #1'},
-        {'author': user, 'body': 'Test post #2'}
-    ]
+    page = request.args.get('page', 1, type=int)
+    posts = user.posts.order_by(Post.timestamp.desc()).paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('user', username=user.username, page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('user', username=user.username, page=posts.prev_num) \
+        if posts.has_prev else None
     form = EmptyForm()
-    return render_template('user.html', user=user, posts=posts, form=form)
-
-
-# The before_request decorated from Flask register the decorated function to be executed
-# right before the view function. This is extremely useful because we can insert code that
-# we want to execute before any view function in the application, and we can have it in a
-# single place.
-@app.before_request
-def before_request():
-    # The implementation simply checks if the current_user is logged in, and in that case sets
-    # the last_Seen field to the current time. We use UTC for consistent time units.
-    # Using local time is not a good idea because it goes into the database depending on your
-    # location.
-    if current_user.is_authenticated:
-        current_user.last_seen = datetime.utcnow()
-
-        # Commit the database session, so that the change made above is written to the database
-        # There is no db.session.add() before commit, when we reference current_user, Flask Login
-        # will invoke the user loader callback function which will run a db query that will put
-        # the target user in the database session.
-        db.session.commit()
+    return render_template('user.html', user=user, posts=posts.items,
+                           next_url=next_url, prev_url=prev_url, form=form)
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
@@ -247,11 +268,3 @@ def unfollow(username):
     else:
         return redirect(url_for('index'))
 
-
-@app.route('/explore')
-@login_required
-def explore():
-    posts = Post.query.order_by(Post.timestamp.desc()).all()
-    # We don't include the form argument in the template call because we dont
-    # want to have forms activated when we press explore button
-    return render_template('index.html', title='Explore', posts=posts)
