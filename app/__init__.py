@@ -9,7 +9,8 @@ import os
 from flask_mail import Mail
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
-
+from flask_babel import Babel
+from flask import request
 
 app = Flask(__name__)
 # Tell Flask to read and apply the config file, done right after
@@ -86,6 +87,13 @@ mail = Mail(app)
 # We initialize bootstrap
 bootstrap = Bootstrap(app)
 moment = Moment(app)
+babel = Babel(app)
+
+
+@babel.localeselector
+def get_locale():
+    return request.accept_languages.best_match(app.config['LANGUAGES'])
+
 
 # This is imported at the bottom is a workaround to circular imports.
 # Putting it on the bottom avoids results from mutual references
