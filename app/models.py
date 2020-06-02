@@ -1,8 +1,9 @@
 from datetime import datetime
 from hashlib import md5
-from app import db, login
+from app import db, login, app
+import jwt
+from time import time
 from werkzeug.security import generate_password_hash, check_password_hash
-
 
 # Flask Login requires four items, and it can work with user models that
 # are based on any database system
@@ -121,6 +122,29 @@ class User(UserMixin, db.Model):
         # timestamp by time descending
         own = Post.query.filter_by(user_id=self.id)
         return followed.union(own).order_by(Post.timestamp.desc())
+
+    # Generate a JWT token as a string, we need to decode the string in UTF-8 because
+    # the encode function returns as a byte sequence, but its more convenient to have
+    # the token as a string
+
+    def get_reset_password_token(self, expires_in=600):
+        return jwt.encode(
+            {'reset-password': self.id, 'exp': time() + expires_in},
+            app.config['SECRET_KEY'], algorithm='HS256').decode('utf-8')
+
+    # A static method can be invoked direct from the class. A static method is similar
+    # to a class method, with the only difference being static methods do not receive
+    # class as a first argument.
+    @staticmethod
+    def verify_reset_password_token(token):
+        try:
+            id = jwt.decode(token, app.config['SECRET_KEY'],
+                            algorithms=['HS256'])['reset_password']
+        except:
+            return
+        return User.query.get(id)
+
+
 # Flask-Login knows nothing about databases, it needs the application's help
 # in loading a user. The user loader is registered with Flask-login with the
 # @login... decorator.
