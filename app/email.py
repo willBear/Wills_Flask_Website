@@ -3,14 +3,25 @@ from flask import render_template
 from app import mail, app
 
 # Now we implement threading to reduce processing time of sending out emails,
-# this is achieved by sending out threading 
+# this is achieved by sending out threading
+from threading import Thread
+
+# The send async email function runs in the a back ground thread invoked via
+# the Thread() class in the last line of send_mail().
+# We also need to send the application instance, and flask uses flask context
+# avoid having to pass arguments across functions. There are application contexts
+# and request context. These contexts are automatically managed by the framework.
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
 
 
 def send_email(subject, sender, recipients, text_body, html_body):
     msg = Message(subject, sender=sender, recipients=recipients)
     msg.body = text_body
     msg.html = html_body
-    mail.send(msg)
+    Thread(target=send_async_email, args=(app, msg).start())
+
 
 # Email is generated from templates using the familiar render_template() function.
 # The templates receive the user and the token as arguments, and personalized email
