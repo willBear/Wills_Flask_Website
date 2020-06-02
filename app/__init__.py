@@ -7,6 +7,7 @@ import logging
 from logging.handlers import SMTPHandler, RotatingFileHandler
 import os
 from flask_mail import Mail
+from flask_bootstrap import Bootstrap
 
 
 app = Flask(__name__)
@@ -80,6 +81,9 @@ if not app.debug:
     app.logger.info('Wills Website')
 
 mail = Mail(app)
+
+# We initialize bootstrap
+bootstrap = Bootstrap(app)
 
 # This is imported at the bottom is a workaround to circular imports.
 # Putting it on the bottom avoids results from mutual references
