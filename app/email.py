@@ -2,6 +2,9 @@ from flask_mail import Message
 from flask import render_template
 from app import mail, app
 
+# Now we implement threading to reduce processing time of sending out emails,
+# this is achieved by sending out threading 
+
 
 def send_email(subject, sender, recipients, text_body, html_body):
     msg = Message(subject, sender=sender, recipients=recipients)
@@ -13,7 +16,7 @@ def send_email(subject, sender, recipients, text_body, html_body):
 # The templates receive the user and the token as arguments, and personalized email
 # can be generated.
 
-def send_password_email(user):
+def send_password_reset_email(user):
     token = user.get_reset_password_token()
     send_email('[Wills Website] Reset Your Password',
                sender=app.config['ADMINS'][0],
